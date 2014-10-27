@@ -82,11 +82,23 @@ class Database {
     public function insert($rows,$values,$table){
         //Execute insert query
 
+        foreach($rows as $row){
+            $row = stripslashes($row);
+            $row = mysqli_real_escape_string($this->connection,$row);
+
+            $newRows [] = $row.",";
+        }
+        $rw = rtrim(implode($newRows),",");
+
         foreach($values as $value){
             $value = stripslashes($value);
             $value = mysqli_real_escape_string($this->connection,$value);
+
+            $newVal [] = "'".$value."',";
         }
-        $sql = "INSERT INTO ".$table."(".implode($rows).") VALUES (".implode($values).")";
+
+        $val = implode($newVal)."NOW(),NOW()";
+        $sql = "INSERT INTO ".$table."(".$rw.") VALUES (".$val.")";
 
         print_r($sql); die();
         $result = $this->query($sql);

@@ -27,7 +27,7 @@ echo '</br>';
 
 //$sql2 = "INSERT INTO users (username, password, created, modified, groups_id)VALUES('$username','$password',NOW(),NOW(),$groupid)";
 
-$rows = array('username','password','groups_id');
+$rows = array('username','password','groups_id','created','modified');
 
 $values = array('xxxxxxxxxxx','yyyyyyyyy','groups_id');
 
