@@ -1,35 +1,39 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Actiontrip1
- * Date: 24-Oct-14
- * Time: 16:23
- */
 
 class Paginate extends database {
 
 
-    public function firstPage($table,$con){
+    private function checkS($action1, $action2) {
 
-        $x = parent::Count($table,$con);
-
-
-    }
-
-
-    public function lastPage(){
-
+        if(isset($_GET['s']) && is_numeric($_GET['s']) && ($_GET['s']!=0)) {
+           return $action1;
+        }else{
+           return $action2;
+        }
 
     }
 
-    public function number(){
+    public function firstPage(){
 
+      return 0;
 
     }
 
-    public function previousPage(){
+    public function lastPage($table, $limit){
 
+        $x = parent::Count($table);
 
+        return ceil($x/$limit);
+    }
+
+    public function number($limit){
+
+            $this->checkS($_GET['s'] / $limit, 0);
+    }
+
+    public function previousPage($limit){
+
+        $this->checkS($_GET['s'] / $limit - 1, 0);
     }
 
     public function nextPage(){

@@ -11,6 +11,8 @@ class Database {
 
     private $config = null;
 
+    private $lastId = null;
+
 
     public function __construct($config){
 
@@ -25,6 +27,16 @@ class Database {
             die('Could not connect: ' . mysqli_error($this->connection));
         }
     }
+    /*
+     * Returns FALSE on failure. For successful SELECT, SHOW, DESCRIBE or EXPLAIN queries mysqli_query() will return a mysqli_result object.
+     * For other successful queries mysqli_query() will return TRUE.
+     */
+    public function query($sql){
+
+        return mysqli_query($this->connection, $sql);
+
+    }
+
     //OVO RADI
     public function selectAll($sql){
 
@@ -38,48 +50,85 @@ class Database {
         return $niz;
     }
 
-    public function query($sql){
+    //OVO RADI
+    public function selectFirst($sql){
 
-        return mysqli_query($this->connection, $sql);
 
+//        $this->query($sql);
+//        $row = mysqli_fetch_array($sql);
+//        foreach($row as $r){
+//            $rezult[] = $r;
+//        }
+
+        $rezult = $this->selectAll($sql);
+        return $rezult[0];
     }
 
     //OVO RADI
-    public function SelectFirst($table, $sql){
-
-
-        $this->query($sql);
-        $row = mysqli_fetch_array($q);
-        foreach($row as $r){
-            $rezult[] = $r;
-        }
-        return $rezult;
-    }
-
-    //OVO RADI
-    public function Count($table){
+    public function count($table){
 
         $sql = "SELECT COUNT(*)FROM $table";
 
-
-        $this->query($sql);
-        $row = mysqli_fetch_array($q);
+        $row = mysqli_fetch_array($this->query($sql));
         $rezult = $row[0];
         return $rezult;
 
     }
 
+    /**
+     * @param Sring $sql Mysql query string
+     * @return bool|mysqli_result
+     */
+    public function insert($rows,$values,$table){
+        //Execute insert query
 
-    //OVO RADI
-    public function getLastInsertedId($table,$con){
+        foreach($values as $value){
+            $value = stripslashes($value);
+            $value = mysqli_real_escape_string($this->connection,$value);
+        }
+        $sql = "INSERT INTO ".$table."(".implode($rows).") VALUES (".implode($values).")";
 
-        $sql = "SELECT * FROM $table ORDER BY id DESC LIMIT 1";
-
-        //print_r($sql);
-        $q = mysqli_query($con, $sql);
-        $rezult = mysqli_fetch_array($q);
-        return $rezult[0];
+        print_r($sql); die();
+        $result = $this->query($sql);
+        if($result) { //true,false or resource id
+            $this->lastId = mysqli_insert_id($this->connection);
+        return $result;
+        }else{
+            return $this->getLastError();
+        }
     }
+
+    public function update($sql){
+        if($this->query($sql)){
+            return true;
+        }else {
+            return $this->getLastError();
+        }
+    }
+
+    public function delete($table, $id){
+        $sql = "DELETE FROM $table WHERE id=".$id;
+        if($this->query($sql)){
+            return true;
+        }else {
+            return $this->getLastError();
+        }
+    }
+
+
+    public function getLastInsertedId(){
+
+        if ($this->lastId!= NULL){
+            return $this->lastId;
+        }else {
+            return 0;
+        }
+    }
+
+    public function getLastError(){
+        return mysqli_error($this->connection);
+    }
+
 }
 
 
