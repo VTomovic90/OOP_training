@@ -5,7 +5,7 @@
  * @since 30.10.2014.
  * @example
  * $db = new Database();
- * $allRows = $db->selectAll("SELECT * FROM $table");
+ * $allRows = $db->selectAll("SELECT * FROM $table")
  *
  */
 
