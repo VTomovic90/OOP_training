@@ -191,16 +191,27 @@ class Database {
      * @param Int $id
      * @return boolean - if true Insert id done, if falce foes to $this->getLastError
      */
-    public function insertOneVal($table,$column,$value,$id){
+    //@todo : da li u nizu moze da mi bude samo jedan key->value par ili vise? ----> uradio sam za jedan
+    public function insertOneVal($table,$data,$id){
 
-        if(!is_string($table) || !is_string($column)){
-            $this->errorMsg = 'First 2 parameters must be typeof string.';
+        if(!is_string($table)){
+            $this->errorMsg = 'First parameter must be typeof string.';
             return false;
         }
 
-        if(!isset($value)){
-            $this->errorMsg = 'Value is not set.';
-            return false;
+        if(!is_array($data)){
+        	$this->errorMsg = 'Second parameters must be typeof array.';
+        	return false;
+        }
+        
+        if(empty($data)){
+        	$this->errorMsg = 'Array must not be empty.';
+        	return false;
+        }
+        
+        if(count($data)>1){
+        	$this->errorMsg = 'Only one element alowed in array.';
+        	return false;
         }
 
         if(!is_int($id)){
@@ -208,9 +219,9 @@ class Database {
             return false;
         }
 
-        $value = mysqli_real_escape_string($this->connection, stripslashes($value));
-
-        $sql = "UPDATE ".$table." SET ".$column." = "."'".$value."'"." WHERE id=".$id;
+        $data = $this->sanitize($data);
+        
+        $sql = "UPDATE ".$table." SET ".array_keys($data)[0]." = "."'".array_values($data)[0]."'"." WHERE id=".$id;
 
         return $this->query($sql);
     }
