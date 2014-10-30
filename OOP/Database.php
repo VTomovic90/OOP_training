@@ -1,25 +1,67 @@
 <?php
-//Svaka klasa ide u poseban fajl
-//Sve sto je vezano za klasu koju pravis treba biti u toj klasi (izuztetak su konfig varijable)
-
-//$this->NAME;          -- Property
-//$this->NAME();        -- Method
+/**
+ *
+ * @author Actiontrip1
+ * @since 30.10.2014.
+ * @example
+ * $db = new Database();
+ * $allRows = $db->selectAll("SELECT * FROM $table");
+ *
+ */
 
 class Database {
 
+
+    /**
+     * Object that sets connection to database
+     * @var Connection $connection
+     * @access private
+     */
     private $connection = null;
 
+
+    /**
+     *
+     * @var Array $config
+     * @see config.php
+     * @access private
+     */
     private $config = null;
 
+
+    /**
+     * Variables value changes only after insert method is called
+     * @var Int $lastId
+     * @see $this->insert();
+     * @access private
+     */
     private $lastId = null;
 
 
+    /**
+     * This variable shows us message if error that is not sql happenned
+     * @var String $errorMsg
+     * @see $this->getLastError
+     * @access private
+     */
+    private $errorMsg = null;
+
+
+
+    /**
+     * Constructor creates database connection
+     * @param Array $config - array('host'=>'', 'username'=>'', 'pass'=>'')
+     */
     public function __construct($config){
 
         $this->config = $config;
         $this->connect();
     }
 
+
+    /**
+     * @see $this->connection;
+     */
     private function connect(){
 
         $this->connection = mysqli_connect($this->config['host'],$this->config['user'],$this->config['password'],$this->config['db']);
@@ -27,17 +69,23 @@ class Database {
             die('Could not connect: ' . mysqli_error($this->connection));
         }
     }
-    /*
-     * Returns FALSE on failure. For successful SELECT, SHOW, DESCRIBE or EXPLAIN queries mysqli_query() will return a mysqli_result object.
-     * For other successful queries mysqli_query() will return TRUE.
+
+
+    /**
+     * Does sql query on sql expresion
+     * @param String $sql - sql expresion
      */
     public function query($sql){
 
         return mysqli_query($this->connection, $sql);
-
     }
 
-    //OVO RADI
+
+    /**
+     * This method takes sql expresion, does "select all" query and returns array
+     * @param String $sql
+     * @return Array $niz
+     */
     public function selectAll($sql){
 
         $resource = $this->query($sql);
@@ -50,21 +98,25 @@ class Database {
         return $niz;
     }
 
-    //OVO RADI
+
+    /**
+     * Selects first row from table
+     * @param String $sql
+     * @return mysql row
+     */
     public function selectFirst($sql){
-
-
-//        $this->query($sql);
-//        $row = mysqli_fetch_array($sql);
-//        foreach($row as $r){
-//            $rezult[] = $r;
-//        }
 
         $rezult = $this->selectAll($sql);
         return $rezult[0];
     }
 
-    //OVO RADI
+
+    /**
+     * Counts number of rows in table
+     * @param String $table
+     * @return sql query
+     * @see $this->query()
+     */
     public function count($table){
 
         $sql = "SELECT COUNT(*)FROM $table";
@@ -72,73 +124,212 @@ class Database {
         $row = mysqli_fetch_array($this->query($sql));
         $rezult = $row[0];
         return $rezult;
-
     }
 
+
     /**
-     * @param Sring $sql Mysql query string
-     * @return bool|mysqli_result
+     * This method inserts data from Array into table
+     * @param Array $data
+     * @param String $table
+     * @return boolean		-if true Insert id done, if falce foes to $this->getLastError
      */
-    public function insert($rows,$values,$table){
-        //Execute insert query
-
-        foreach($rows as $row){
-            $row = stripslashes($row);
-            $row = mysqli_real_escape_string($this->connection,$row);
-
-            $newRows [] = $row.",";
-        }
-        $rw = rtrim(implode($newRows),",");
-
-        foreach($values as $value){
-            $value = stripslashes($value);
-            $value = mysqli_real_escape_string($this->connection,$value);
-
-            $newVal [] = "'".$value."',";
+    public function insert($data,$table){
+        if(!is_array($data)){
+            //sets error
+            $this->errorMsg = 'First argument need to be typeof array.';
+            return false;
         }
 
-        $val = implode($newVal)."NOW(),NOW()";
-        $sql = "INSERT INTO ".$table."(".$rw.") VALUES (".$val.")";
+        if(!is_string($table)){
+            //sets error
+            $this->errorMsg = 'Second argument need to be typeof string.';
+            return false;
+        }
 
-        print_r($sql); die();
+        if(empty($data)){
+            //sets error
+            $this->errorMsg = 'Bad input data.';
+            return false;
+        }
+
+        if(count(array_keys($data)) != count(array_values($data))){
+            //sets error
+            $this->errorMsg = 'Number of fields in table must be equal as number of values for those fields.';
+            return false;
+        }
+
+
+        $data = $this->sanitize($data);
+
+        /*
+         * sets Array values to corespond to mysql syntax
+         */
+        foreach ($data as $key=>$value){
+            $value = "'".$value."'";
+            $data[$key] = $value;
+        }
+
+        $date = array("created"=>'NOW()', "modified"=>'NOW()');
+
+        $data = array_merge($data,$date);
+
+        $sql = "INSERT INTO ".$table."(".implode(array_keys($data),",").") VALUES (".implode(array_values($data),",").")";
+
         $result = $this->query($sql);
         if($result) { //true,false or resource id
             $this->lastId = mysqli_insert_id($this->connection);
+        }
         return $result;
-        }else{
-            return $this->getLastError();
-        }
     }
 
-    public function update($sql){
-        if($this->query($sql)){
-            return true;
-        }else {
-            return $this->getLastError();
+
+    /**
+     * This method sets 1 value to 1 column in table
+     * @param String $table
+     * @param String $column
+     * @param Mixed $value
+     * @param Int $id
+     * @return boolean - if true Insert id done, if falce foes to $this->getLastError
+     */
+    public function insertOneVal($table,$column,$value,$id){
+
+        if(!is_string($table) || !is_string($column)){
+            $this->errorMsg = 'First 2 parameters must be typeof string.';
+            return false;
         }
+
+        if(!isset($value)){
+            $this->errorMsg = 'Value is not set.';
+            return false;
+        }
+
+        if(!is_int($id)){
+            $this->errorMsg = 'Fourth parameter must be typeof int.';
+            return false;
+        }
+
+        $value = mysqli_real_escape_string($this->connection, stripslashes($value));
+
+        $sql = "UPDATE ".$table." SET ".$column." = "."'".$value."'"." WHERE id=".$id;
+
+        return $this->query($sql);
     }
 
+
+    /**
+     * This method updates table row whit selected $id
+     * @param String $table
+     * @param Array $data	- associative array : key = (column name) , value = (variable that goes into that column)
+     * @param Int $id
+     * @return boolean		-if true Insert id done, if falce foes to $this->getLastError
+     */
+    public function update($table, $data, $id){
+
+        if(!is_string($table)){
+            //sets error
+            $this->errorMsg = 'First argument need to be typeof string.';
+            return false;
+        }
+
+        if(!is_array($data)){
+            //sets error
+            $this->errorMsg = 'Second argument need to be typeof array.';
+            return false;
+        }
+
+        if(empty($data)){
+            //sets error
+            $this->errorMsg = 'Bad input data.';
+            return false;
+        }
+
+        if(!is_int($id)){
+            //sets error
+            $this->errorMsg = 'Third argument must be typeof int.';
+            return false;
+        }
+
+        if(count(array_keys($data)) != count(array_values($data))){
+            //sets error
+            $this->errorMsg = 'Number of fields in table must be equal as number of values for those fields.';
+            return false;
+        }
+
+        $data = $this->sanitize($data);
+
+        /*
+         * sets Array values to corespond to mysql syntax
+        */
+        foreach ($data as $key => $value){
+            $value = "'$value'";
+            $data[$key] = "$key = $value";
+        }
+
+        $date = "modified = NOW()";
+        $final = implode($data,",");
+        $sql = "UPDATE ".$table." SET ".$final.",".$date." WHERE id = ".$id;
+
+        return $this->query($sql);
+    }
+
+
+    /**
+     * This method sanitizes every value from Array
+     * @param Array $data
+     * @return Array $data
+     */
+    public function sanitize($data){
+
+        foreach($data as $key => $value){
+            $data [$key] = mysqli_real_escape_string($this->connection, stripslashes($value));
+        }
+        return $data;
+    }
+
+    /**
+     * Takes table name and id number and deletes from table row that coresponds to given id
+     * @param unknown $table
+     * @param unknown $id
+     * @return sql query
+     * @see $this->query()
+     */
     public function delete($table, $id){
         $sql = "DELETE FROM $table WHERE id=".$id;
-        if($this->query($sql)){
-            return true;
-        }else {
-            return $this->getLastError();
-        }
+        $rezult = $this->query($sql);
+        return $rezult;
     }
 
-
+    /**
+     * After insert method is called it saves id value, this method returns that values
+     * @return number
+     * @see $this->insert()
+     */
     public function getLastInsertedId(){
-
-        if ($this->lastId!= NULL){
+        if ($this->lastId!= null){
             return $this->lastId;
         }else {
             return 0;
         }
     }
 
+
+    /**
+     * If error happened this method will return it
+     * @return string $errorMsg
+     */
     public function getLastError(){
-        return mysqli_error($this->connection);
+
+        $error = ($this->errorMsg!=null) ? $this->errorMsg : 'Mysql error:'.mysqli_error($this->connection);
+        return '<b>Error: </b>'.$error;
+    }
+
+
+    /**
+     * closes connection with database
+     */
+    public function closeConnection(){
+
+        return mysqli_close($this->connection);
     }
 
 }
