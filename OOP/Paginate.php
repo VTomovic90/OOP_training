@@ -52,10 +52,12 @@ class Paginate extends Database {
 		if(!is_array($conf) || empty($conf)){
 				
 			echo 'Second parameter of this object myst be array, and it must NOT be empty.';
+			return false;
 		}
 		
 		if(!isset($conf['table'])) {
 			echo 'You havent specified table to paginate.';
+			return false;
 		}
 		
 		
