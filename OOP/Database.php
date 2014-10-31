@@ -8,6 +8,7 @@
  * $allRows = $db->selectAll("SELECT * FROM $table")
  *
  */
+require_once("config.php");
 
 class Database {
 
@@ -45,6 +46,9 @@ class Database {
      * @access private
      */
     private $errorMsg = null;
+    
+    
+    public $log = array();
 
 
 
@@ -119,11 +123,27 @@ class Database {
      */
     public function count($table){
 
-        $sql = "SELECT COUNT(*)FROM $table";
-
+        $sql = "SELECT COUNT(id) FROM $table";
+		
+        $this->log($sql);
+        
         $row = mysqli_fetch_array($this->query($sql));
         $rezult = $row[0];
         return $rezult;
+    }
+    
+    private function log($sql){
+    	
+    	array_push($this->log, $sql);
+    }
+    
+    public function printSql(){
+    	
+    	
+    		foreach($this->log as $k=>$v){
+    			
+    			echo ($k+1).'. '.$v.'</br>';
+    		}
     }
 
 

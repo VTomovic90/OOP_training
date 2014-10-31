@@ -1,0 +1,28 @@
+
+$pages = new Paginate($dbConfig, $conf);
+$pretty = $pages->pretty();
+	foreach($pretty as $k=>$v){
+	
+		if($k == 'numbers'){
+			foreach($v as $key=>$value){
+				
+				if(isset($_GET['s']) && $value == $_GET['s']){
+					 echo $value;
+				}else{
+				?>
+	    				   <a href="index.php?s=<?php echo $value; ?>"> <?php echo $value;?> </a>
+	    				    		
+	    		<?php 
+	    			}
+			}
+	    		}else{
+					if($pages->currentPage() == $pages->firstPage() && ($k == 'previous' || $k == 'first')){
+					}
+					elseif($pages->currentPage() == $pages->lastPage() && ($k == 'next' || $k == 'last')){
+					}else{
+	    		?>
+	    		<a href="index.php?s=<?php echo $v; ?>"> <?php echo $k;?> </a>
+	    		<?php 
+	    			}
+				}
+	}
