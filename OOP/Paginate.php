@@ -58,6 +58,7 @@ class Paginate extends Database {
 			echo 'You havent specified table to paginate.';
 		}
 		
+		
 		parent::__construct($config);
 		
 		$this->table = $conf['table'];
@@ -67,6 +68,10 @@ class Paginate extends Database {
 		$this->displayPages = $conf['displayNum'];
 		
 		$this->setup();
+		
+		if($this->displayPages > $this->lastPage()){
+			$this->displayPages = $this->lastPage();
+		}
 	}
 	
 	
