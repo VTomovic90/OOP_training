@@ -1,8 +1,8 @@
-<?php
-
+<?php 
 require_once("Tables.php");
 
-class Blog extends Tables{
+
+class News extends Tables{
 	
 	/**
 	 * String variable that shows class name
@@ -18,7 +18,6 @@ class Blog extends Tables{
 	 */
 	public $items = null;
 	
-	
 	/**
 	 * Limits displayed numbers in paginator
 	 * Value is set in constructor
@@ -27,21 +26,24 @@ class Blog extends Tables{
 	public $displayNum = 5;
 	
 	
+	
 	/**
-	 * 
+	 *
 	 * @param Object $db
 	 * @param number $items
 	 */
 	public function __construct($db,$items=10){
-		
+	
 		$this->className = strtolower(get_class($this));
-		
+	
 		$this->items = $items;
-		
+	
 		$conf = array('table'=>$this->className , 'items'=>$this->items , 'displayNum'=>$this->displayNum);
-		
+	
 		parent::__construct($db, $conf);
 	}
+	
+	
 	
 	
 	
